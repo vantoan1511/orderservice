@@ -16,8 +16,10 @@ import com.shopbee.orderservice.repository.OrderRepository;
 import com.shopbee.orderservice.service.IOrderStatus;
 import com.shopbee.orderservice.shared.enums.PaymentMethod;
 import com.shopbee.orderservice.shared.exception.OrderServiceException;
+import com.shopbee.orderservice.shared.filter.FilterCriteria;
 import com.shopbee.orderservice.shared.page.PageRequest;
 import com.shopbee.orderservice.shared.page.PagedResponse;
+import com.shopbee.orderservice.shared.sort.SortCriteria;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -59,10 +61,12 @@ public class OrderService {
         this.orderDetailsResponseConverter = orderDetailsResponseConverter;
     }
 
-    public PagedResponse<Order> getBy(PageRequest pageRequest) {
+    public PagedResponse<Order> getByCriteria(FilterCriteria filterCriteria,
+                                              PageRequest pageRequest,
+                                              SortCriteria sortCriteria) {
         String currentUsername = getCurrentUsername();
-        List<Order> orders = orderRepository.findBy(currentUsername, pageRequest);
-        long totalItems = orderRepository.countBy(currentUsername);
+        List<Order> orders = orderRepository.findByCriteria(currentUsername, filterCriteria, pageRequest, sortCriteria);
+        long totalItems = orderRepository.countBy(currentUsername, filterCriteria);
         return PagedResponse.of(totalItems, pageRequest, orders);
     }
 

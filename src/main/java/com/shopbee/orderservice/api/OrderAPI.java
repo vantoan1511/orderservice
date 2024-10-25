@@ -3,7 +3,9 @@ package com.shopbee.orderservice.api;
 import com.shopbee.orderservice.dto.CreateOrderRequest;
 import com.shopbee.orderservice.entity.Order;
 import com.shopbee.orderservice.service.impl.OrderService;
+import com.shopbee.orderservice.shared.filter.FilterCriteria;
 import com.shopbee.orderservice.shared.page.PageRequest;
+import com.shopbee.orderservice.shared.sort.SortCriteria;
 import io.quarkus.security.Authenticated;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -29,8 +31,10 @@ public class OrderAPI {
 
     @GET
     @Authenticated
-    public Response getOrders(@Valid PageRequest pageRequest) {
-        return Response.ok(orderService.getBy(pageRequest)).build();
+    public Response getOrders(@BeanParam @Valid FilterCriteria filterCriteria,
+                              @BeanParam @Valid PageRequest pageRequest,
+                              @BeanParam @Valid SortCriteria sortCriteria) {
+        return Response.ok(orderService.getByCriteria(filterCriteria, pageRequest, sortCriteria)).build();
     }
 
     @GET
