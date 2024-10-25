@@ -24,9 +24,10 @@ public enum OrderStatus {
         DECLINED.allowedTransitions = EnumSet.of(REFUNDED);
         AWAITING_PICKUP.allowedTransitions = EnumSet.of(AWAITING_SHIPPING, CANCELED);
         AWAITING_SHIPPING.allowedTransitions = EnumSet.of(CANCELED, SHIPPED);
-        CANCELED.allowedTransitions = EnumSet.noneOf(OrderStatus.class);
+        CANCELED.allowedTransitions = EnumSet.of(REFUNDED);
         SHIPPED.allowedTransitions = EnumSet.of(COMPLETED);
         COMPLETED.allowedTransitions = EnumSet.noneOf(OrderStatus.class);
+        REFUNDED.allowedTransitions = EnumSet.noneOf(OrderStatus.class);
     }
 
     public boolean canTransitionTo(OrderStatus orderStatus) {
