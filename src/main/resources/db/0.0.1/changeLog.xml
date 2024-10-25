@@ -9,6 +9,9 @@
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
+            <column name="payment_method" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
             <column name="order_status" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>

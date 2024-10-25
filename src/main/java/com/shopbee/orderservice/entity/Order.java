@@ -14,7 +14,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.Set;
+import java.util.List;
 
 @Getter
 @Setter
@@ -30,7 +30,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status", nullable = false)
-    private OrderStatus orderStatus;
+    private OrderStatus orderStatus = OrderStatus.CREATED;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false)
@@ -53,7 +53,7 @@ public class Order {
     @Column(nullable = false)
     private String username;
 
-    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore
-    private Set<OrderDetails> orderDetails;
+    private List<OrderDetails> orderDetails;
 }
