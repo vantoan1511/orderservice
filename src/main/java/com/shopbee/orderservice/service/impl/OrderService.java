@@ -1,16 +1,23 @@
-package com.shopbee.orderservice.service;
+package com.shopbee.orderservice.service.impl;
 
 import com.shopbee.orderservice.converter.OrderConverter;
 import com.shopbee.orderservice.converter.OrderDetailsConverter;
+import com.shopbee.orderservice.converter.OrderDetailsResponseConverter;
+import com.shopbee.orderservice.converter.OrderResponseConverter;
 import com.shopbee.orderservice.dto.CreateOrderRequest;
+import com.shopbee.orderservice.dto.OrderDetailsResponse;
+import com.shopbee.orderservice.dto.OrderResponse;
 import com.shopbee.orderservice.entity.Order;
 import com.shopbee.orderservice.entity.OrderDetails;
 import com.shopbee.orderservice.external.product.Product;
 import com.shopbee.orderservice.external.product.ProductServiceClient;
+import com.shopbee.orderservice.repository.OrderDetailsRepository;
 import com.shopbee.orderservice.repository.OrderRepository;
-import com.shopbee.orderservice.shared.enums.OrderStatus;
+import com.shopbee.orderservice.service.IOrderStatus;
 import com.shopbee.orderservice.shared.enums.PaymentMethod;
 import com.shopbee.orderservice.shared.exception.OrderServiceException;
+import com.shopbee.orderservice.shared.page.PageRequest;
+import com.shopbee.orderservice.shared.page.PagedResponse;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -24,23 +31,48 @@ import java.util.List;
 @ApplicationScoped
 public class OrderService {
 
+    private final ProductServiceClient productServiceClient;
     private final OrderRepository orderRepository;
+    private final OrderDetailsRepository orderDetailsRepository;
     private final SecurityIdentity identity;
     private final OrderConverter orderConverter;
     private final OrderDetailsConverter orderDetailsConverter;
-    private final ProductServiceClient productServiceClient;
+    private final OrderResponseConverter orderResponseConverter;
+    private final OrderDetailsResponseConverter orderDetailsResponseConverter;
 
     @Inject
     public OrderService(OrderRepository orderRepository,
                         SecurityIdentity identity,
                         OrderConverter orderConverter,
                         OrderDetailsConverter orderDetailsConverter,
-                        @RestClient ProductServiceClient productServiceClient) {
+                        @RestClient ProductServiceClient productServiceClient,
+                        OrderResponseConverter orderResponseConverter,
+                        OrderDetailsRepository orderDetailsRepository,
+                        OrderDetailsResponseConverter orderDetailsResponseConverter) {
         this.orderRepository = orderRepository;
         this.identity = identity;
         this.orderConverter = orderConverter;
         this.orderDetailsConverter = orderDetailsConverter;
         this.productServiceClient = productServiceClient;
+        this.orderResponseConverter = orderResponseConverter;
+        this.orderDetailsRepository = orderDetailsRepository;
+        this.orderDetailsResponseConverter = orderDetailsResponseConverter;
+    }
+
+    public PagedResponse<Order> getBy(PageRequest pageRequest) {
+        String currentUsername = getCurrentUsername();
+        List<Order> orders = orderRepository.findBy(currentUsername, pageRequest);
+        long totalItems = orderRepository.countBy(currentUsername);
+        return PagedResponse.of(totalItems, pageRequest, orders);
+    }
+
+    public OrderResponse getById(Long id) {
+        Order order = getByIdAndUsername(id, getCurrentUsername());
+        OrderResponse response = orderResponseConverter.convert(order);
+        List<OrderDetails> orderDetails = orderDetailsRepository.findByOrderId(order.getId());
+        List<OrderDetailsResponse> orderDetailsResponses = orderDetailsResponseConverter.convertAll(orderDetails);
+        response.setOrderDetails(orderDetailsResponses);
+        return response;
     }
 
     @Transactional
@@ -71,5 +103,21 @@ public class OrderService {
         order.setUsername(identity.getPrincipal().getName());
         orderRepository.persist(order);
         return order;
+    }
+
+    @Transactional
+    public void cancelOrder(Long id) {
+        Order order = getByIdAndUsername(id, getCurrentUsername());
+        IOrderStatus orderStatus = new OrderCancelStatus(order);
+        orderStatus.cancel();
+    }
+
+    private Order getByIdAndUsername(Long id, String username) {
+        return orderRepository.findByIdAndUsername(id, username)
+                .orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
+    }
+
+    private String getCurrentUsername() {
+        return identity.getPrincipal().getName();
     }
 }

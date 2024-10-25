@@ -1,4 +1,4 @@
-package com.shopbee.orderservice.service;
+package com.shopbee.orderservice.service.impl;
 
 import com.shopbee.orderservice.repository.OrderDetailsRepository;
 import jakarta.enterprise.context.ApplicationScoped;
