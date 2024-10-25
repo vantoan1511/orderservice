@@ -11,7 +11,6 @@ import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.commons.lang3.StringUtils;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,7 +25,7 @@ public class OrderRepository implements PanacheRepository<Order> {
                                       FilterCriteria filterCriteria,
                                       PageRequest pageRequest,
                                       SortCriteria sortCriteria) {
-        String query = buildQuery(filterCriteria);
+        String query = buildQuery(username, filterCriteria);
         Parameters parameters = buildParameters(username, filterCriteria);
 
         Sort.Direction direction = sortCriteria.isAscending() ? Sort.Direction.Ascending : Sort.Direction.Descending;
@@ -36,42 +35,52 @@ public class OrderRepository implements PanacheRepository<Order> {
     }
 
     public long countBy(String username, FilterCriteria filterCriteria) {
-        String query = buildQuery(filterCriteria);
+        String query = buildQuery(username, filterCriteria);
         Parameters parameters = buildParameters(username, filterCriteria);
         return count(query, parameters);
     }
 
-    private String buildQuery(FilterCriteria filterCriteria) {
-        String query = "username = :username";
-        String keyword = Optional.ofNullable(filterCriteria).map(FilterCriteria::getKeyword).orElse(null);
-        OrderStatus status = Optional.ofNullable(filterCriteria).map(FilterCriteria::getStatus).orElse(null);
-        if (status != null) {
-            query += " AND orderStatus = :status";
+    private String buildQuery(String username, FilterCriteria filterCriteria) {
+        StringBuilder query = new StringBuilder("1=1");
+
+        if (StringUtils.isNotBlank(username)) {
+            query.append(" AND username = :username");
         }
 
-        if (StringUtils.isNotBlank(keyword)) {
-            query += " AND (lower(username) like :keyword or lower(shippingAddress) like :keyword or totalAmount = :amount)";
+        if (filterCriteria == null) {
+            return query.toString();
         }
-        return query;
+
+        if (filterCriteria.getStatus() != null) {
+            query.append(" AND orderStatus = :status");
+        }
+
+        if (StringUtils.isNotBlank(filterCriteria.getKeyword())) {
+            query.append(" AND (lower(username) like :keyword OR lower(shippingAddress) like :keyword OR totalAmount = :amount)");
+        }
+
+        return query.toString();
     }
 
     private Parameters buildParameters(String username, FilterCriteria filterCriteria) {
         Parameters parameters = Parameters.with("username", username);
-        OrderStatus status = Optional.ofNullable(filterCriteria).map(FilterCriteria::getStatus).orElse(null);
-        String keyword = Optional.ofNullable(filterCriteria).map(FilterCriteria::getKeyword).orElse(null);
-        if (status != null) {
-            parameters.and("status", status);
+        if (filterCriteria == null) {
+            return parameters;
         }
+
+        Optional.ofNullable(filterCriteria.getStatus()).ifPresent((status) -> parameters.and("status", status));
+        String keyword = filterCriteria.getKeyword();
 
         if (StringUtils.isNotBlank(keyword)) {
             parameters.and("keyword", "%" + keyword.toLowerCase() + "%");
+
             try {
-                double amount = Double.parseDouble(keyword);
-                parameters.and("amount", amount);
+                parameters.and("amount", Double.parseDouble(keyword));
             } catch (NumberFormatException e) {
                 parameters.and("amount", -1);
             }
         }
+
         return parameters;
     }
 }
