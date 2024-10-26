@@ -2,6 +2,7 @@ package com.shopbee.orderservice.shared.enums;
 
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public enum OrderStatus {
     CREATED,
@@ -32,5 +33,12 @@ public enum OrderStatus {
 
     public boolean canTransitionTo(OrderStatus orderStatus) {
         return allowedTransitions.contains(orderStatus);
+    }
+
+    public static OrderStatus from(String code) {
+        return Stream.of(values())
+                .filter(orderStatus -> orderStatus.name().equals(code))
+                .findFirst()
+                .orElse(null);
     }
 }

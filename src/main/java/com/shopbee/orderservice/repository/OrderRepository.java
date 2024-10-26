@@ -1,7 +1,6 @@
 package com.shopbee.orderservice.repository;
 
 import com.shopbee.orderservice.entity.Order;
-import com.shopbee.orderservice.shared.enums.OrderStatus;
 import com.shopbee.orderservice.shared.filter.FilterCriteria;
 import com.shopbee.orderservice.shared.page.PageRequest;
 import com.shopbee.orderservice.shared.sort.SortCriteria;
@@ -18,7 +17,7 @@ import java.util.Optional;
 public class OrderRepository implements PanacheRepository<Order> {
 
     public Optional<Order> findByIdAndUsername(Long id, String username) {
-        return find("id = ?1 AND username = ?2", id, username).stream().findFirst();
+        return findByIdOptional(id).filter(order -> order.getUsername().equals(username));
     }
 
     public List<Order> findByCriteria(String username,

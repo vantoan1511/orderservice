@@ -7,13 +7,15 @@ import com.shopbee.orderservice.converter.OrderResponseConverter;
 import com.shopbee.orderservice.dto.CreateOrderRequest;
 import com.shopbee.orderservice.dto.OrderDetailsResponse;
 import com.shopbee.orderservice.dto.OrderResponse;
+import com.shopbee.orderservice.dto.UpdateStatusRequest;
 import com.shopbee.orderservice.entity.Order;
 import com.shopbee.orderservice.entity.OrderDetails;
 import com.shopbee.orderservice.external.product.Product;
 import com.shopbee.orderservice.external.product.ProductServiceClient;
 import com.shopbee.orderservice.repository.OrderDetailsRepository;
 import com.shopbee.orderservice.repository.OrderRepository;
-import com.shopbee.orderservice.service.IOrderStatus;
+import com.shopbee.orderservice.service.AbstractOrderStatus;
+import com.shopbee.orderservice.shared.enums.OrderStatus;
 import com.shopbee.orderservice.shared.enums.PaymentMethod;
 import com.shopbee.orderservice.shared.exception.OrderServiceException;
 import com.shopbee.orderservice.shared.filter.FilterCriteria;
@@ -70,7 +72,7 @@ public class OrderService {
         return PagedResponse.of(totalItems, pageRequest, orders);
     }
 
-    public OrderResponse getById(Long id) {
+    public OrderResponse getOrderResponseById(Long id) {
         Order order = getByIdAndUsername(id, getCurrentUsername());
         OrderResponse response = orderResponseConverter.convert(order);
         List<OrderDetails> orderDetails = orderDetailsRepository.findByOrderId(order.getId());
@@ -112,8 +114,28 @@ public class OrderService {
     @Transactional
     public void cancelOrder(Long id) {
         Order order = getByIdAndUsername(id, getCurrentUsername());
-        IOrderStatus orderStatus = new OrderCancelStatus(order);
+        AbstractOrderStatus orderStatus = new OrderCancelStatus(order);
         orderStatus.cancel();
+    }
+
+    @Transactional
+    public void updateStatus(Long id, UpdateStatusRequest updateStatusRequest) {
+        OrderStatus targetStatus = OrderStatus.from(updateStatusRequest.getStatus());
+        if (targetStatus == null) {
+            throw new OrderServiceException("Unsupported status", Response.Status.BAD_REQUEST);
+        }
+
+        Order order = getById(id);
+        if (!order.getOrderStatus().canTransitionTo(targetStatus)) {
+            throw new OrderServiceException("Cannot change status from " + order.getOrderStatus() + " to " + targetStatus, Response.Status.METHOD_NOT_ALLOWED);
+        }
+
+        order.setOrderStatus(targetStatus);
+    }
+
+    private Order getById(Long id) {
+        return orderRepository.findByIdOptional(id)
+                .orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
     }
 
     private Order getByIdAndUsername(Long id, String username) {

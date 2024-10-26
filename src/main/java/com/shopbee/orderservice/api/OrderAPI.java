@@ -1,12 +1,14 @@
 package com.shopbee.orderservice.api;
 
 import com.shopbee.orderservice.dto.CreateOrderRequest;
+import com.shopbee.orderservice.dto.UpdateStatusRequest;
 import com.shopbee.orderservice.entity.Order;
 import com.shopbee.orderservice.service.impl.OrderService;
 import com.shopbee.orderservice.shared.filter.FilterCriteria;
 import com.shopbee.orderservice.shared.page.PageRequest;
 import com.shopbee.orderservice.shared.sort.SortCriteria;
 import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -40,8 +42,16 @@ public class OrderAPI {
     @GET
     @Path("{id}")
     @Authenticated
-    public Response getOrders(@PathParam("id") Long id) {
-        return Response.ok(orderService.getById(id)).build();
+    public Response getById(@PathParam("id") Long id) {
+        return Response.ok(orderService.getOrderResponseById(id)).build();
+    }
+
+    @PATCH
+    @Path("{id}")
+    @RolesAllowed({"ADMIN"})
+    public Response updateStatus(@PathParam("id") Long id, @Valid UpdateStatusRequest updateStatusRequest) {
+        orderService.updateStatus(id, updateStatusRequest);
+        return Response.ok().build();
     }
 
     @PATCH
