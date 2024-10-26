@@ -89,25 +89,14 @@ public class OrderService {
         }
 
         Order order = orderConverter.convert(createOrderRequest);
-
-        List<OrderDetails> orderDetails = orderDetailsConverter.convertAll(createOrderRequest.getItems());
-        orderDetails.forEach(orderItem -> {
-            Product product = productServiceClient.getBySlug(orderItem.getProductSlug());
-            if (orderItem.getQuantity() > product.getStockQuantity()) {
-                throw new OrderServiceException("Product " + orderItem.getProductSlug() + " is not enough request quantity", Response.Status.BAD_REQUEST);
-            }
-            orderItem.setPrice(product.getSalePrice());
-            orderItem.setOrder(order);
-        });
-
-        BigDecimal totalAmount = orderDetails.stream()
-                .map(OrderDetails::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<OrderDetails> orderDetails = createOrderDetails(createOrderRequest, order);
+        BigDecimal totalAmount = calculateTotalAmount(orderDetails);
 
         order.setOrderDetails(orderDetails);
         order.setTotalAmount(totalAmount);
         order.setUsername(identity.getPrincipal().getName());
         orderRepository.persist(order);
+
         return order;
     }
 
@@ -131,6 +120,28 @@ public class OrderService {
         }
 
         order.setOrderStatus(targetStatus);
+    }
+
+    private BigDecimal calculateTotalAmount(List<OrderDetails> orderDetails) {
+        return orderDetails.stream()
+                .map(OrderDetails::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private List<OrderDetails> createOrderDetails(CreateOrderRequest createOrderRequest, Order order) {
+        List<OrderDetails> orderDetails = orderDetailsConverter.convertAll(createOrderRequest.getItems());
+        orderDetails.forEach(orderItem -> validateAndSetOrder(orderItem, order));
+        return orderDetails;
+    }
+
+    private void validateAndSetOrder(OrderDetails orderDetails, Order order) {
+        Product product = productServiceClient.getBySlug(orderDetails.getProductSlug());
+        if (orderDetails.getQuantity() > product.getStockQuantity()) {
+            throw new OrderServiceException("Insufficient stock for product: " + orderDetails.getProductSlug(), Response.Status.BAD_REQUEST);
+        }
+
+        orderDetails.setPrice(product.getSalePrice());
+        orderDetails.setOrder(order);
     }
 
     private Order getById(Long id) {
