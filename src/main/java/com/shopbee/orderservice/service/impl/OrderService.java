@@ -14,7 +14,6 @@ import com.shopbee.orderservice.external.product.Product;
 import com.shopbee.orderservice.external.product.ProductServiceClient;
 import com.shopbee.orderservice.repository.OrderDetailsRepository;
 import com.shopbee.orderservice.repository.OrderRepository;
-import com.shopbee.orderservice.service.AbstractOrderStatus;
 import com.shopbee.orderservice.shared.constants.Role;
 import com.shopbee.orderservice.shared.enums.OrderStatus;
 import com.shopbee.orderservice.shared.enums.PaymentMethod;
@@ -107,8 +106,11 @@ public class OrderService {
     @Transactional
     public void cancelOrder(Long id) {
         Order order = getByIdAndCurrentUser(id);
-        AbstractOrderStatus orderStatus = new OrderCancelStatus(order);
-        orderStatus.cancel();
+        if (!order.getOrderStatus().canTransitionTo(OrderStatus.CANCELED)) {
+            throw new OrderServiceException("Cannot cancel this order", Response.Status.METHOD_NOT_ALLOWED);
+        }
+
+        order.setOrderStatus(OrderStatus.CANCELED);
     }
 
     @Transactional
