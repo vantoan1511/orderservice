@@ -15,6 +15,7 @@ import com.shopbee.orderservice.external.product.ProductServiceClient;
 import com.shopbee.orderservice.repository.OrderDetailsRepository;
 import com.shopbee.orderservice.repository.OrderRepository;
 import com.shopbee.orderservice.service.AbstractOrderStatus;
+import com.shopbee.orderservice.shared.constants.Role;
 import com.shopbee.orderservice.shared.enums.OrderStatus;
 import com.shopbee.orderservice.shared.enums.PaymentMethod;
 import com.shopbee.orderservice.shared.exception.OrderServiceException;
@@ -63,17 +64,16 @@ public class OrderService {
         this.orderDetailsResponseConverter = orderDetailsResponseConverter;
     }
 
-    public PagedResponse<Order> getByCriteria(FilterCriteria filterCriteria,
-                                              PageRequest pageRequest,
-                                              SortCriteria sortCriteria) {
-        String currentUsername = getCurrentUsername();
-        List<Order> orders = orderRepository.findByCriteria(currentUsername, filterCriteria, pageRequest, sortCriteria);
-        long totalItems = orderRepository.countBy(currentUsername, filterCriteria);
+    public PagedResponse<Order> getPagedOrdersByCriteria(FilterCriteria filterCriteria,
+                                                         PageRequest pageRequest,
+                                                         SortCriteria sortCriteria) {
+        List<Order> orders = getByCriteria(filterCriteria, pageRequest, sortCriteria);
+        long totalItems = countByCriteria(filterCriteria);
         return PagedResponse.of(totalItems, pageRequest, orders);
     }
 
     public OrderResponse getOrderResponseById(Long id) {
-        Order order = getByIdAndUsername(id, getCurrentUsername());
+        Order order = getById(id);
         OrderResponse response = orderResponseConverter.convert(order);
         List<OrderDetails> orderDetails = orderDetailsRepository.findByOrderId(order.getId());
         List<OrderDetailsResponse> orderDetailsResponses = orderDetailsResponseConverter.convertAll(orderDetails);
@@ -92,6 +92,10 @@ public class OrderService {
         List<OrderDetails> orderDetails = createOrderDetails(createOrderRequest, order);
         BigDecimal totalAmount = calculateTotalAmount(orderDetails);
 
+        if (paymentMethod.equals(PaymentMethod.CASH)) {
+            order.setOrderStatus(OrderStatus.PENDING);
+        }
+
         order.setOrderDetails(orderDetails);
         order.setTotalAmount(totalAmount);
         order.setUsername(identity.getPrincipal().getName());
@@ -102,7 +106,7 @@ public class OrderService {
 
     @Transactional
     public void cancelOrder(Long id) {
-        Order order = getByIdAndUsername(id, getCurrentUsername());
+        Order order = getByIdAndCurrentUser(id);
         AbstractOrderStatus orderStatus = new OrderCancelStatus(order);
         orderStatus.cancel();
     }
@@ -120,6 +124,24 @@ public class OrderService {
         }
 
         order.setOrderStatus(targetStatus);
+    }
+
+    private List<Order> getByCriteria(FilterCriteria filterCriteria,
+                                      PageRequest pageRequest,
+                                      SortCriteria sortCriteria) {
+        if (identity.hasRole(Role.ADMIN)) {
+            return orderRepository.findByCriteria(null, filterCriteria, pageRequest, sortCriteria);
+        }
+
+        return orderRepository.findByCriteria(getCurrentUsername(), filterCriteria, pageRequest, sortCriteria);
+    }
+
+    private long countByCriteria(FilterCriteria filterCriteria) {
+        if (identity.hasRole(Role.ADMIN)) {
+            return orderRepository.countBy(null, filterCriteria);
+        }
+
+        return orderRepository.countBy(getCurrentUsername(), filterCriteria);
     }
 
     private BigDecimal calculateTotalAmount(List<OrderDetails> orderDetails) {
@@ -145,11 +167,16 @@ public class OrderService {
     }
 
     private Order getById(Long id) {
-        return orderRepository.findByIdOptional(id)
-                .orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
+        if (identity.hasRole(Role.ADMIN)) {
+            return orderRepository.findByIdOptional(id)
+                    .orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
+        }
+
+        return getByIdAndCurrentUser(id);
     }
 
-    private Order getByIdAndUsername(Long id, String username) {
+    private Order getByIdAndCurrentUser(Long id) {
+        String username = getCurrentUsername();
         return orderRepository.findByIdAndUsername(id, username)
                 .orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
     }

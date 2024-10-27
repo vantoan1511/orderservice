@@ -4,6 +4,7 @@ import com.shopbee.orderservice.dto.CreateOrderRequest;
 import com.shopbee.orderservice.dto.UpdateStatusRequest;
 import com.shopbee.orderservice.entity.Order;
 import com.shopbee.orderservice.service.impl.OrderService;
+import com.shopbee.orderservice.shared.constants.Role;
 import com.shopbee.orderservice.shared.filter.FilterCriteria;
 import com.shopbee.orderservice.shared.page.PageRequest;
 import com.shopbee.orderservice.shared.sort.SortCriteria;
@@ -36,7 +37,7 @@ public class OrderAPI {
     public Response getOrders(@BeanParam @Valid FilterCriteria filterCriteria,
                               @BeanParam @Valid PageRequest pageRequest,
                               @BeanParam @Valid SortCriteria sortCriteria) {
-        return Response.ok(orderService.getByCriteria(filterCriteria, pageRequest, sortCriteria)).build();
+        return Response.ok(orderService.getPagedOrdersByCriteria(filterCriteria, pageRequest, sortCriteria)).build();
     }
 
     @GET
@@ -48,7 +49,7 @@ public class OrderAPI {
 
     @PATCH
     @Path("{id}")
-    @RolesAllowed({"ADMIN"})
+    @RolesAllowed({Role.ADMIN})
     public Response updateStatus(@PathParam("id") Long id, @Valid UpdateStatusRequest updateStatusRequest) {
         orderService.updateStatus(id, updateStatusRequest);
         return Response.ok().build();
