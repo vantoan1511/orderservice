@@ -62,7 +62,12 @@ public class OrderRepository implements PanacheRepository<Order> {
             params.put("keyword", "%" + keyword + "%");
         }
 
-        return String.join(" AND ", clauses);
+        if (StringUtils.isNotBlank(filterCriteria.getProductSlug())) {
+            clauses.add("EXISTS (SELECT 1 FROM OrderDetails od WHERE od.order.id = o.id AND od.productSlug = :productSlug)");
+            params.put("productSlug", filterCriteria.getProductSlug());
+        }
+
+        return "FROM Order o WHERE " + String.join(" AND ", clauses);
     }
 
     private Sort sortBy(SortCriteria sortCriteria) {

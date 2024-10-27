@@ -18,4 +18,7 @@ public class FilterCriteria {
 
     @QueryParam("status")
     private OrderStatus status;
+
+    @QueryParam("productSlug")
+    private String productSlug;
 }
