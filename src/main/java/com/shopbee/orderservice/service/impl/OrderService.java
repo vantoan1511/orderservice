@@ -91,10 +91,6 @@ public class OrderService {
         List<OrderDetails> orderDetails = createOrderDetails(createOrderRequest, order);
         BigDecimal totalAmount = calculateTotalAmount(orderDetails);
 
-        if (paymentMethod.equals(PaymentMethod.CASH)) {
-            order.setOrderStatus(OrderStatus.PENDING);
-        }
-
         order.setOrderDetails(orderDetails);
         order.setTotalAmount(totalAmount);
         order.setUsername(identity.getPrincipal().getName());
@@ -111,6 +107,16 @@ public class OrderService {
         }
 
         order.setOrderStatus(OrderStatus.CANCELED);
+    }
+
+    @Transactional
+    public void completeOrder(Long id) {
+        Order order = getByIdAndCurrentUser(id);
+        if (!order.getOrderStatus().canTransitionTo(OrderStatus.COMPLETED)) {
+            throw new OrderServiceException("Cannot complete this order", Response.Status.METHOD_NOT_ALLOWED);
+        }
+
+        order.setOrderStatus(OrderStatus.COMPLETED);
     }
 
     @Transactional

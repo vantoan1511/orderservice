@@ -63,6 +63,14 @@ public class OrderAPI {
         return Response.ok().build();
     }
 
+    @PATCH
+    @Path("{id}/complete")
+    @Authenticated
+    public Response completeOrder(@PathParam("id") Long id) {
+        orderService.completeOrder(id);
+        return Response.ok().build();
+    }
+
     @POST
     @Authenticated
     public Response createOrder(@Valid CreateOrderRequest createOrderRequest,
