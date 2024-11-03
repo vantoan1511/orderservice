@@ -131,11 +131,12 @@ public class OrderService {
     private List<Order> getByCriteria(FilterCriteria filterCriteria,
                                       PageRequest pageRequest,
                                       SortCriteria sortCriteria) {
-        if (identity.hasRole(Role.ADMIN)) {
-            return orderRepository.findByCriteria(null, filterCriteria, pageRequest, sortCriteria);
+        if (!identity.hasRole(Role.ADMIN)) {
+            filterCriteria.setUsername(getCurrentUsername());
+            return orderRepository.findByCriteria(filterCriteria, pageRequest, sortCriteria);
         }
 
-        return orderRepository.findByCriteria(getCurrentUsername(), filterCriteria, pageRequest, sortCriteria);
+        return orderRepository.findByCriteria(filterCriteria, pageRequest, sortCriteria);
     }
 
     private long countByCriteria(FilterCriteria filterCriteria) {

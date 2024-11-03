@@ -18,12 +18,11 @@ public class OrderRepository implements PanacheRepository<Order> {
         return findByIdOptional(id).filter(order -> order.getUsername().equals(username));
     }
 
-    public List<Order> findByCriteria(String username,
-                                      FilterCriteria filterCriteria,
+    public List<Order> findByCriteria(FilterCriteria filterCriteria,
                                       PageRequest pageRequest,
                                       SortCriteria sortCriteria) {
         Map<String, Object> parameters = new HashMap<>();
-        String query = buildDynamicQuery(username, filterCriteria, parameters);
+        String query = buildDynamicQuery(filterCriteria, parameters);
 
         return find(query, sortBy(sortCriteria), parameters)
                 .page(pageRequest.getPage() - 1, pageRequest.getSize())
@@ -32,23 +31,22 @@ public class OrderRepository implements PanacheRepository<Order> {
 
     public long countBy(String username, FilterCriteria filterCriteria) {
         Map<String, Object> parameters = new HashMap<>();
-        String query = buildDynamicQuery(username, filterCriteria, parameters);
+        String query = buildDynamicQuery(filterCriteria, parameters);
         return count(query, parameters);
     }
 
-    private String buildDynamicQuery(String username,
-                                     FilterCriteria filterCriteria,
+    private String buildDynamicQuery(FilterCriteria filterCriteria,
                                      Map<String, Object> params) {
         List<String> clauses = new ArrayList<>();
         clauses.add("1=1");
 
-        if (StringUtils.isNotBlank(username)) {
-            clauses.add("username = :username");
-            params.put("username", username);
-        }
-
         if (filterCriteria == null) {
             return String.join(" AND ", clauses);
+        }
+
+        if (StringUtils.isNotBlank(filterCriteria.getUsername())) {
+            clauses.add("username = :username");
+            params.put("username", filterCriteria.getUsername());
         }
 
         if (filterCriteria.getStatus() != null) {

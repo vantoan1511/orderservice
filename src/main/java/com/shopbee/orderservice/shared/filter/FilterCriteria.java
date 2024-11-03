@@ -1,6 +1,7 @@
 package com.shopbee.orderservice.shared.filter;
 
 import com.shopbee.orderservice.shared.enums.OrderStatus;
+import com.shopbee.orderservice.shared.enums.PaymentMethod;
 import jakarta.ws.rs.QueryParam;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,4 +22,10 @@ public class FilterCriteria {
 
     @QueryParam("productSlug")
     private String productSlug;
+
+    @QueryParam("username")
+    private String username;
+
+    @QueryParam("paymentMethod")
+    private PaymentMethod paymentMethod;
 }

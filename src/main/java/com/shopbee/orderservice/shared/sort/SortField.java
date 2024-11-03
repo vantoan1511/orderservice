@@ -6,7 +6,9 @@ import lombok.Getter;
 public enum SortField {
     CREATED_AT("createdAt"),
     STATUS("orderStatus"),
-    USERNAME("username");
+    USERNAME("username"),
+    TOTAL_AMOUNT("totalAmount"),
+    PAYMENT_METHOD("paymentMethod");
 
     private final String column;
 
