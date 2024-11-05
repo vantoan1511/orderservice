@@ -94,8 +94,14 @@ public class OrderService {
         order.setOrderDetails(orderDetails);
         order.setTotalAmount(totalAmount);
         order.setUsername(identity.getPrincipal().getName());
-        orderRepository.persist(order);
 
+        if (paymentMethod.equals(PaymentMethod.CASH)) {
+            order.setOrderStatus(OrderStatus.PENDING);
+        } else {
+            order.setOrderStatus(OrderStatus.CREATED);
+        }
+
+        orderRepository.persist(order);
         return order;
     }
 

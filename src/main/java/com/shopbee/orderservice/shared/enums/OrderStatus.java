@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public enum OrderStatus {
+    CREATED,
     PENDING,
     ACCEPTED,
     DECLINED,
@@ -18,6 +19,7 @@ public enum OrderStatus {
     private Set<OrderStatus> allowedTransitions;
 
     static {
+        CREATED.allowedTransitions = EnumSet.of(CANCELED, PENDING);
         PENDING.allowedTransitions = EnumSet.of(ACCEPTED, DECLINED, CANCELED);
         ACCEPTED.allowedTransitions = EnumSet.of(AWAITING_PICKUP, CANCELED);
         DECLINED.allowedTransitions = EnumSet.of(REFUNDED);
