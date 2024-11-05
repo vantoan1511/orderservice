@@ -83,7 +83,8 @@ public class OrderAPI {
 
     @POST
     @Path("{id}")
-    public Response invokeSuccessCheckout(@PathParam("id") Long id, String secureKey) {
+    @Authenticated
+    public Response invokeSuccessCheckout(@PathParam("id") Long id, @QueryParam("secureKey") String secureKey) {
         if (SecureKeyUtil.verifyHMAC(secureKey)) {
             orderService.handleSuccessCheckout(id);
             return Response.ok().build();

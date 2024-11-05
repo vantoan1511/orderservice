@@ -203,7 +203,7 @@ public class OrderService {
     }
 
     private Order getByIdAndCurrentUser(Long id) {
-        String username = getCurrentUsername();
+            String username = getCurrentUsername();
         return orderRepository.findByIdAndUsername(id, username)
                 .orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
     }
