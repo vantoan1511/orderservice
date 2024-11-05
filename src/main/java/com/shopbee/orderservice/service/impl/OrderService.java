@@ -142,7 +142,7 @@ public class OrderService {
 
     @Transactional
     public void handleSuccessCheckout(Long id) {
-        Order order = getById(id);
+        Order order = orderRepository.findByIdOptional(id).orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
         if (!order.getOrderStatus().equals(OrderStatus.CREATED)) {
             throw new OrderServiceException("The order has already checked out", Response.Status.CONFLICT);
         }
@@ -203,7 +203,7 @@ public class OrderService {
     }
 
     private Order getByIdAndCurrentUser(Long id) {
-            String username = getCurrentUsername();
+        String username = getCurrentUsername();
         return orderRepository.findByIdAndUsername(id, username)
                 .orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
     }
