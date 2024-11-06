@@ -3,7 +3,6 @@ package com.shopbee.orderservice.api;
 import com.shopbee.orderservice.dto.CreateOrderRequest;
 import com.shopbee.orderservice.dto.UpdateStatusRequest;
 import com.shopbee.orderservice.entity.Order;
-import com.shopbee.orderservice.security.SecureKeyUtil;
 import com.shopbee.orderservice.service.impl.OrderService;
 import com.shopbee.orderservice.shared.constants.Role;
 import com.shopbee.orderservice.shared.filter.FilterCriteria;
@@ -79,15 +78,5 @@ public class OrderAPI {
         Order order = orderService.createOrder(createOrderRequest);
         URI uri = uriInfo.getAbsolutePathBuilder().build(order.getId());
         return Response.created(uri).entity(order).build();
-    }
-
-    @POST
-    @Path("{id}")
-    public Response invokeSuccessCheckout(@PathParam("id") Long id, @QueryParam("secureKey") String secureKey) {
-        if (SecureKeyUtil.verifyHMAC(secureKey)) {
-            orderService.handleSuccessCheckout(id);
-            return Response.ok().build();
-        }
-        return Response.status(Response.Status.FORBIDDEN).build();
     }
 }

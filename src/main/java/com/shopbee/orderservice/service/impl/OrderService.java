@@ -94,14 +94,8 @@ public class OrderService {
         order.setOrderDetails(orderDetails);
         order.setTotalAmount(totalAmount);
         order.setUsername(identity.getPrincipal().getName());
-
-        if (paymentMethod.equals(PaymentMethod.CASH)) {
-            order.setOrderStatus(OrderStatus.PENDING);
-        } else {
-            order.setOrderStatus(OrderStatus.CREATED);
-        }
-
         orderRepository.persist(order);
+
         return order;
     }
 
@@ -138,18 +132,6 @@ public class OrderService {
         }
 
         order.setOrderStatus(targetStatus);
-    }
-
-    @Transactional
-    public void handleSuccessCheckout(Long id) {
-        Order order = orderRepository.findByIdOptional(id).orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
-        if (!order.getOrderStatus().equals(OrderStatus.CREATED)) {
-            throw new OrderServiceException("The order has already checked out", Response.Status.CONFLICT);
-        }
-        if (order.getPaymentMethod().equals(PaymentMethod.CASH)) {
-            throw new OrderServiceException("Method not allowed", Response.Status.METHOD_NOT_ALLOWED);
-        }
-        order.setOrderStatus(OrderStatus.PENDING);
     }
 
     private List<Order> getByCriteria(FilterCriteria filterCriteria,
