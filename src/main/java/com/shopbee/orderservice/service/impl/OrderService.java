@@ -143,13 +143,24 @@ public class OrderService {
     @Transactional
     public void handleSuccessCheckout(Long id) {
         Order order = orderRepository.findByIdOptional(id).orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
+        validateOrderStatus(order);
+        order.setOrderStatus(OrderStatus.PENDING);
+    }
+
+    @Transactional
+    public void handleFailureCheckout(Long id) {
+        Order order = orderRepository.findByIdOptional(id).orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
+        validateOrderStatus(order);
+        order.setOrderStatus(OrderStatus.CANCELED);
+    }
+
+    private void validateOrderStatus(Order order) {
         if (!order.getOrderStatus().equals(OrderStatus.CREATED)) {
             throw new OrderServiceException("The order has already checked out", Response.Status.CONFLICT);
         }
         if (order.getPaymentMethod().equals(PaymentMethod.CASH)) {
             throw new OrderServiceException("Method not allowed", Response.Status.METHOD_NOT_ALLOWED);
         }
-        order.setOrderStatus(OrderStatus.PENDING);
     }
 
     private List<Order> getByCriteria(FilterCriteria filterCriteria,
