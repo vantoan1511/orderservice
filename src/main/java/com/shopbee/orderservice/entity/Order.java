@@ -42,6 +42,9 @@ public class Order {
     @Column(name = "shipping_address", nullable = false)
     private String shippingAddress;
 
+    @Column(name = "declined_reason")
+    private String declinedReason;
+
     @Column(name = "created_at")
     @CreationTimestamp
     private OffsetDateTime createdAt;

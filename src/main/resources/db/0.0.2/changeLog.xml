@@ -4,9 +4,10 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
     https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <property name="author" value="shopbee"/>
-    <property name="id" value="os"/>
+    <changeSet author="${author}" id="${id}-1">
+        <addColumn tableName="os_order">
+            <column name="declined_reason" type="TEXT"/>
+        </addColumn>
+    </changeSet>
 
-    <include file="/db/0.0.1/changeLog.xml"/>
-    <include file="/db/0.0.2/changeLog.xml"/>
 </databaseChangeLog>

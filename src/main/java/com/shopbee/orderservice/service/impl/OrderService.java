@@ -31,6 +31,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class OrderService {
@@ -135,6 +136,11 @@ public class OrderService {
         Order order = getById(id);
         if (!order.getOrderStatus().canTransitionTo(targetStatus)) {
             throw new OrderServiceException("Cannot change status from " + order.getOrderStatus() + " to " + targetStatus, Response.Status.METHOD_NOT_ALLOWED);
+        }
+
+        if (targetStatus.equals(OrderStatus.DECLINED)) {
+            String reason = Optional.ofNullable(updateStatusRequest.getDeclinedReason()).map(String::trim).orElse(null);
+            order.setDeclinedReason(reason);
         }
 
         order.setOrderStatus(targetStatus);

@@ -19,6 +19,7 @@ public class OrderResponse {
     private String paymentMethod;
     private BigDecimal totalAmount;
     private String shippingAddress;
+    private String declinedReason;
     private OffsetDateTime createdAt;
     private OffsetDateTime modifiedAt;
     private String username;

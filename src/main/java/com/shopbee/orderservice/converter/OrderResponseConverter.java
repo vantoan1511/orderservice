@@ -18,6 +18,7 @@ public class OrderResponseConverter implements IConverter<Order, OrderResponse> 
         response.setOrderStatus(order.getOrderStatus().name());
         response.setPaymentMethod(order.getPaymentMethod().name());
         response.setShippingAddress(order.getShippingAddress());
+        response.setDeclinedReason(order.getDeclinedReason());
         response.setTotalAmount(order.getTotalAmount());
         response.setUsername(order.getUsername());
         response.setCreatedAt(order.getCreatedAt());

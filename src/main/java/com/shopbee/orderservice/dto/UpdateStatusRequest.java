@@ -14,4 +14,7 @@ public class UpdateStatusRequest {
 
     @NotNull(message = "Status must not be null")
     private String status;
+
+    private String declinedReason;
+
 }
