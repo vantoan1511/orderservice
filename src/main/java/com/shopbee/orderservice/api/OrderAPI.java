@@ -55,7 +55,7 @@ public class OrderAPI {
 
     @PATCH
     @Path("{id}")
-    @RolesAllowed({Role.ADMIN})
+    @RolesAllowed({Role.ADMIN, Role.STAFF})
     public Response updateStatus(@PathParam("id") Long id, @Valid UpdateStatusRequest updateStatusRequest) {
         orderService.updateStatus(id, updateStatusRequest);
         return Response.ok().build();
