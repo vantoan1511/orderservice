@@ -1,10 +1,12 @@
 package com.shopbee.orderservice.api;
 
 import com.shopbee.orderservice.dto.CreateOrderRequest;
+import com.shopbee.orderservice.dto.SaleReportRequest;
 import com.shopbee.orderservice.dto.UpdateStatusRequest;
 import com.shopbee.orderservice.entity.Order;
 import com.shopbee.orderservice.security.SecureKeyUtil;
 import com.shopbee.orderservice.service.impl.OrderService;
+import com.shopbee.orderservice.service.impl.ReportService;
 import com.shopbee.orderservice.shared.constants.Role;
 import com.shopbee.orderservice.shared.filter.FilterCriteria;
 import com.shopbee.orderservice.shared.page.PageRequest;
@@ -27,10 +29,13 @@ import java.net.URI;
 public class OrderAPI {
 
     private final OrderService orderService;
+    private final ReportService reportService;
 
     @Inject
-    public OrderAPI(OrderService orderService) {
+    public OrderAPI(OrderService orderService,
+                    ReportService reportService) {
         this.orderService = orderService;
+        this.reportService = reportService;
     }
 
     @GET
@@ -101,5 +106,11 @@ public class OrderAPI {
             return Response.ok().build();
         }
         return Response.status(Response.Status.FORBIDDEN).build();
+    }
+
+    @GET
+    @Path("report")
+    public Response getRevenueReport(@BeanParam @Valid SaleReportRequest saleReportRequest) {
+        return Response.ok(reportService.getSaleReport(saleReportRequest)).build();
     }
 }
