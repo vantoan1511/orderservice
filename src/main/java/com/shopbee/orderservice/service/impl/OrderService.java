@@ -172,7 +172,7 @@ public class OrderService {
     private List<Order> getByCriteria(FilterCriteria filterCriteria,
                                       PageRequest pageRequest,
                                       SortCriteria sortCriteria) {
-        if (!identity.hasRole(Role.ADMIN)) {
+        if (!identity.hasRole(Role.ADMIN) && !identity.hasRole(Role.STAFF)) {
             filterCriteria.setUsername(getCurrentUsername());
             return orderRepository.findByCriteria(filterCriteria, pageRequest, sortCriteria);
         }
