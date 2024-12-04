@@ -190,7 +190,7 @@ public class OrderService {
 
     private BigDecimal calculateTotalAmount(List<OrderDetails> orderDetails) {
         return orderDetails.stream()
-                .map(OrderDetails::getPrice)
+                .map(order -> order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
