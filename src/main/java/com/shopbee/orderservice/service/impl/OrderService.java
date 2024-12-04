@@ -10,8 +10,9 @@ import com.shopbee.orderservice.dto.OrderResponse;
 import com.shopbee.orderservice.dto.UpdateStatusRequest;
 import com.shopbee.orderservice.entity.Order;
 import com.shopbee.orderservice.entity.OrderDetails;
-import com.shopbee.orderservice.external.product.Product;
-import com.shopbee.orderservice.external.product.ProductServiceClient;
+import com.shopbee.orderservice.external.product.ProductService;
+import com.shopbee.orderservice.external.product.dto.Product;
+import com.shopbee.orderservice.external.product.dto.UpdatePartialProductRequest;
 import com.shopbee.orderservice.repository.OrderDetailsRepository;
 import com.shopbee.orderservice.repository.OrderRepository;
 import com.shopbee.orderservice.shared.constants.Role;
@@ -27,16 +28,16 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @ApplicationScoped
 public class OrderService {
 
-    private final ProductServiceClient productServiceClient;
+    private final ProductService productService;
     private final OrderRepository orderRepository;
     private final OrderDetailsRepository orderDetailsRepository;
     private final SecurityIdentity identity;
@@ -50,7 +51,7 @@ public class OrderService {
                         SecurityIdentity identity,
                         OrderConverter orderConverter,
                         OrderDetailsConverter orderDetailsConverter,
-                        @RestClient ProductServiceClient productServiceClient,
+                        ProductService productService,
                         OrderResponseConverter orderResponseConverter,
                         OrderDetailsRepository orderDetailsRepository,
                         OrderDetailsResponseConverter orderDetailsResponseConverter) {
@@ -58,7 +59,7 @@ public class OrderService {
         this.identity = identity;
         this.orderConverter = orderConverter;
         this.orderDetailsConverter = orderDetailsConverter;
-        this.productServiceClient = productServiceClient;
+        this.productService = productService;
         this.orderResponseConverter = orderResponseConverter;
         this.orderDetailsRepository = orderDetailsRepository;
         this.orderDetailsResponseConverter = orderDetailsResponseConverter;
@@ -114,6 +115,8 @@ public class OrderService {
         }
 
         order.setOrderStatus(OrderStatus.CANCELED);
+
+        restoreProductQuantity(order);
     }
 
     @Transactional
@@ -138,9 +141,10 @@ public class OrderService {
             throw new OrderServiceException("Cannot change status from " + order.getOrderStatus() + " to " + targetStatus, Response.Status.METHOD_NOT_ALLOWED);
         }
 
-        if (targetStatus.equals(OrderStatus.DECLINED)) {
+        if (targetStatus.equals(OrderStatus.DECLINED) || targetStatus.equals(OrderStatus.CANCELED)) {
             String reason = Optional.ofNullable(updateStatusRequest.getDeclinedReason()).map(String::trim).orElse(null);
             order.setDeclinedReason(reason);
+            restoreProductQuantity(order);
         }
 
         order.setOrderStatus(targetStatus);
@@ -158,6 +162,17 @@ public class OrderService {
         Order order = orderRepository.findByIdOptional(id).orElseThrow(() -> new OrderServiceException("Order not found", Response.Status.NOT_FOUND));
         validateOrderStatus(order);
         order.setOrderStatus(OrderStatus.CANCELED);
+    }
+
+    private void restoreProductQuantity(Order order) {
+        List<OrderDetails> orderDetails = order.getOrderDetails();
+        orderDetails.forEach(each -> {
+            Product product = productService.getBySlug(each.getProductSlug());
+            if (Objects.nonNull(product)) {
+                int restoredQuantity = product.getStockQuantity() + each.getQuantity();
+                productService.updatePartially(each.getProductSlug(), UpdatePartialProductRequest.builder().stockQuantity(restoredQuantity).build());
+            }
+        });
     }
 
     private void validateOrderStatus(Order order) {
@@ -201,13 +216,21 @@ public class OrderService {
     }
 
     private void validateAndSetOrder(OrderDetails orderDetails, Order order) {
-        Product product = productServiceClient.getBySlug(orderDetails.getProductSlug());
-        if (orderDetails.getQuantity() > product.getStockQuantity()) {
+        Product product = productService.getBySlug(orderDetails.getProductSlug());
+        if (Objects.isNull(product)) {
+            throw new OrderServiceException("Product not found " + orderDetails.getProductSlug(), Response.Status.NOT_FOUND);
+        }
+
+        int newQuantity = product.getStockQuantity() - orderDetails.getQuantity();
+        if (newQuantity < 0) {
             throw new OrderServiceException("Insufficient stock for product: " + orderDetails.getProductSlug(), Response.Status.BAD_REQUEST);
         }
 
         orderDetails.setPrice(product.getSalePrice());
         orderDetails.setOrder(order);
+
+        UpdatePartialProductRequest updatePartialProductRequest = UpdatePartialProductRequest.builder().stockQuantity(newQuantity).build();
+        productService.updatePartially(product.getSlug(), updatePartialProductRequest);
     }
 
     private Order getById(Long id) {

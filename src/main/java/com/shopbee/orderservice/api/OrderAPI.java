@@ -46,6 +46,15 @@ public class OrderAPI {
         return Response.ok(orderService.getPagedOrdersByCriteria(filterCriteria, pageRequest, sortCriteria)).build();
     }
 
+    @POST
+    @Authenticated
+    public Response createOrder(@Valid CreateOrderRequest createOrderRequest,
+                                @Context UriInfo uriInfo) {
+        Order order = orderService.createOrder(createOrderRequest);
+        URI uri = uriInfo.getAbsolutePathBuilder().build(order.getId());
+        return Response.created(uri).entity(order).build();
+    }
+
     @GET
     @Path("{id}")
     @Authenticated
@@ -75,15 +84,6 @@ public class OrderAPI {
     public Response completeOrder(@PathParam("id") Long id) {
         orderService.completeOrder(id);
         return Response.ok().build();
-    }
-
-    @POST
-    @Authenticated
-    public Response createOrder(@Valid CreateOrderRequest createOrderRequest,
-                                @Context UriInfo uriInfo) {
-        Order order = orderService.createOrder(createOrderRequest);
-        URI uri = uriInfo.getAbsolutePathBuilder().build(order.getId());
-        return Response.created(uri).entity(order).build();
     }
 
     @POST

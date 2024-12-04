@@ -1,4 +1,4 @@
-package com.shopbee.orderservice.external.product;
+package com.shopbee.orderservice.external.product.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Product {
+    private Long id;
     private String slug;
     private String name;
     private boolean active;
