@@ -2,7 +2,6 @@ package com.shopbee.orderservice.repository;
 
 import com.shopbee.orderservice.entity.Order;
 import com.shopbee.orderservice.shared.enums.OrderStatus;
-import com.shopbee.orderservice.shared.enums.PaymentMethod;
 import com.shopbee.orderservice.shared.filter.FilterCriteria;
 import com.shopbee.orderservice.shared.page.PageRequest;
 import com.shopbee.orderservice.shared.sort.SortCriteria;
@@ -20,14 +19,6 @@ public class OrderRepository implements PanacheRepository<Order> {
         return findByIdOptional(id).filter(order -> order.getUsername().equals(username));
     }
 
-    public List<Order> findCashPaidCompletedByYear(int year) {
-        return find("paymentMethod = ?1 and orderStatus = ?2 and extract(year from createdAt) = ?3", PaymentMethod.CASH, OrderStatus.COMPLETED, year).list();
-    }
-
-    public List<Order> findAllByYear(int year) {
-        return find("extract(year from createdAt) = ?1", year).list();
-    }
-
     public List<Order> findAllCompletedByYear(int year) {
         return find("orderStatus = ?1 and extract(year from createdAt) = ?2", OrderStatus.COMPLETED, year).list();
     }
@@ -38,12 +29,16 @@ public class OrderRepository implements PanacheRepository<Order> {
         Map<String, Object> parameters = new HashMap<>();
         String query = buildDynamicQuery(filterCriteria, parameters);
 
+        if (Objects.isNull(pageRequest)) {
+            return find(query, sortBy(sortCriteria), parameters).list();
+        }
+        
         return find(query, sortBy(sortCriteria), parameters)
                 .page(pageRequest.getPage() - 1, pageRequest.getSize())
                 .list();
     }
 
-    public long countBy(String username, FilterCriteria filterCriteria) {
+    public long countBy(FilterCriteria filterCriteria) {
         Map<String, Object> parameters = new HashMap<>();
         String query = buildDynamicQuery(filterCriteria, parameters);
         return count(query, parameters);
@@ -83,6 +78,9 @@ public class OrderRepository implements PanacheRepository<Order> {
     }
 
     private Sort sortBy(SortCriteria sortCriteria) {
+        if (Objects.isNull(sortCriteria)) {
+            return Sort.empty();
+        }
         Sort.Direction direction = sortCriteria.isAscending() ? Sort.Direction.Ascending : Sort.Direction.Descending;
         return Sort.by(sortCriteria.getSortBy().getColumn(), direction);
     }

@@ -30,6 +30,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -63,6 +64,16 @@ public class OrderService {
         this.orderResponseConverter = orderResponseConverter;
         this.orderDetailsRepository = orderDetailsRepository;
         this.orderDetailsResponseConverter = orderDetailsResponseConverter;
+    }
+
+    public long getSalesVolume(String productSlug) {
+        FilterCriteria filterCriteria = FilterCriteria.builder().productSlug(productSlug).status(OrderStatus.COMPLETED).build();
+        List<Order> orders = orderRepository.findByCriteria(filterCriteria, null, null);
+        return orders.stream()
+                .map(Order::getOrderDetails)
+                .flatMap(Collection::stream)
+                .map(OrderDetails::getQuantity)
+                .reduce(0, Integer::sum);
     }
 
     public PagedResponse<Order> getPagedOrdersByCriteria(FilterCriteria filterCriteria,
@@ -197,10 +208,11 @@ public class OrderService {
 
     private long countByCriteria(FilterCriteria filterCriteria) {
         if (identity.hasRole(Role.ADMIN)) {
-            return orderRepository.countBy(null, filterCriteria);
+            return orderRepository.countBy(filterCriteria);
         }
 
-        return orderRepository.countBy(getCurrentUsername(), filterCriteria);
+        filterCriteria.setUsername(getCurrentUsername());
+        return orderRepository.countBy(filterCriteria);
     }
 
     private BigDecimal calculateTotalAmount(List<OrderDetails> orderDetails) {

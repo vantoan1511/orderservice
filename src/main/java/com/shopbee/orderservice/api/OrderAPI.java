@@ -113,4 +113,10 @@ public class OrderAPI {
     public Response getRevenueReport(@BeanParam @Valid SaleReportRequest saleReportRequest) {
         return Response.ok(reportService.getSaleReport(saleReportRequest)).build();
     }
+
+    @GET
+    @Path("sales/{productSlug}")
+    public Response getSales(@PathParam("productSlug") String productSlug) {
+        return Response.ok(orderService.getSalesVolume(productSlug)).build();
+    }
 }

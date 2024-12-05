@@ -3,13 +3,10 @@ package com.shopbee.orderservice.shared.filter;
 import com.shopbee.orderservice.shared.enums.OrderStatus;
 import com.shopbee.orderservice.shared.enums.PaymentMethod;
 import jakarta.ws.rs.QueryParam;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class FilterCriteria {
